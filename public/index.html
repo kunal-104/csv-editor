@@ -1,0 +1,62 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CSV Editor</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
+    td, th { border: 1px solid #ccc; padding: 8px; }
+    td[contenteditable="true"] { background-color: #f9f9f9; }
+    button { padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h2>CSV Editor</h2>
+  <div id="table-container"></div>
+  <button onclick="saveCSV()">Save</button>
+
+  <script>
+    async function loadCSV() {
+      const res = await fetch("/get-csv");
+      const text = await res.text();
+      const rows = text.trim().split("\n").map(row => row.split(","));
+
+      const table = document.createElement("table");
+      for (let i = 0; i < rows.length; i++) {
+        const tr = document.createElement("tr");
+        for (let j = 0; j < rows[i].length; j++) {
+          const td = document.createElement("td");
+          td.contentEditable = "true";
+          td.innerText = rows[i][j];
+          tr.appendChild(td);
+        }
+        table.appendChild(tr);
+      }
+
+      const container = document.getElementById("table-container");
+      container.innerHTML = "";
+      container.appendChild(table);
+    }
+
+    function saveCSV() {
+      const table = document.querySelector("table");
+      const rows = Array.from(table.rows).map(row =>
+        Array.from(row.cells).map(cell => cell.innerText.trim()).join(",")
+      );
+      fetch("/save-csv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: rows.join("\n") })
+      }).then(res => {
+        if (res.ok) alert("CSV saved!");
+        else alert("Error saving CSV.");
+      });
+    }
+
+    window.onload = loadCSV;
+  </script>
+</body>
+</html>
